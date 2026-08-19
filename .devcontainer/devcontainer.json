@@ -1,0 +1,17 @@
+{
+  "name": "rocker-demo",
+  "image": "rocker/rstudio:4.5.1",
+  "overrideCommand": false,
+  "remoteUser": "rstudio",
+  "containerEnv": {
+    "DISABLE_AUTH": "true",
+    "ROOT": "true"
+  },
+  "forwardPorts": [8787],
+  "portsAttributes": {
+    "8787": { "label": "RStudio", "requireLocalPort": true }
+  },
+  "customizations": {
+    "vscode": { "extensions": ["reditorsupport.r"] }
+  }
+}
