@@ -12,6 +12,11 @@
     "8787": { "label": "RStudio", "requireLocalPort": true }
   },
   "customizations": {
-    "vscode": { "extensions": ["reditorsupport.r"] }
+    "vscode": {
+      "extensions": [
+        "reditorsupport.r",
+        "Anthropic.claude-code"
+      ]
+    }
   }
 }
