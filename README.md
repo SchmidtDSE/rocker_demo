@@ -22,6 +22,16 @@ sudo rstudio-server start   # or: sudo rstudio-server restart
 
 then open the forwarded port 8787 from the **Ports** tab.
 
+RStudio starts with `/workspaces/rocker_demo` as its working directory by default — set via `.devcontainer/rsession.conf` (`session-default-working-dir`), which `.devcontainer/Dockerfile` copies into the image at `/etc/rstudio/rsession.conf`. It's plain server config, baked into the image and checked into the repo — no setup script or mount required.
+
+### CLI agents
+
+The image installs the [Claude Code](https://claude.ai/install.sh) and [OpenCode](https://opencode.ai/install) CLIs for the `rstudio` user at build time (`.devcontainer/scripts/install-claude.sh`, `.devcontainer/scripts/install-opencode.sh`, run from the Dockerfile) — open a terminal and run `claude` or `opencode`. The VS Code Claude extension is not installed; use the CLI instead.
+
+### Git panel
+
+RStudio's Git panel is a tab in the top-right pane (alongside Environment/History), visible automatically once a project has a `.git` repo — use it to stage, commit, and view diffs. If it's missing, open the project via **File → Open Project** on `demo.Rproj` first.
+
 ## Adding packages
 
 1. Install as usual: `install.packages("pkg")` or `renv::install("pkg")`.

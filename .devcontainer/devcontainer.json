@@ -1,6 +1,8 @@
 {
   "name": "rocker-demo",
-  "image": "rocker/rstudio:4.5.1",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "overrideCommand": false,
   "remoteUser": "rstudio",
   "containerEnv": {
@@ -14,8 +16,7 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "reditorsupport.r",
-        "Anthropic.claude-code"
+        "reditorsupport.r"
       ]
     }
   }

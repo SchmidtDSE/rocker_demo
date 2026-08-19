@@ -1,0 +1,135 @@
+---
+title: "Forest Fire Simulation"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+This is a demo of the **Drossel–Schwabl forest-fire model**, a simple
+cellular automaton that produces self-organized criticality. Each cell in a
+grid is in one of three states:
+
+- **empty** (0)
+- **tree** (1)
+- **burning** (2)
+
+At every time step, the following rules are applied simultaneously to every
+cell:
+
+1. A burning cell becomes empty.
+2. A tree with at least one burning neighbor catches fire.
+3. A tree with no burning neighbor catches fire anyway with probability `f`
+   (lightning strike).
+4. An empty cell grows a tree with probability `p`.
+
+Only base R is used, so this runs with no extra packages beyond what's in
+`renv.lock`.
+
+## Simulation function
+
+```{r simulate-function}
+simulate_forest <- function(nrow, ncol, steps, p, f, seed = 1) {
+  set.seed(seed)
+  grid <- matrix(0L, nrow, ncol)
+  history <- vector("list", steps)
+  tree_frac <- numeric(steps)
+  burning_frac <- numeric(steps)
+
+  for (t in seq_len(steps)) {
+    burning <- grid == 2L
+
+    # 4-neighbor burning check via a zero-padded border (fixed boundary)
+    pad <- matrix(FALSE, nrow + 2, ncol + 2)
+    pad[2:(nrow + 1), 2:(ncol + 1)] <- burning
+    neighbor_burning <-
+      pad[1:nrow,       2:(ncol + 1)] |
+      pad[3:(nrow + 2),  2:(ncol + 1)] |
+      pad[2:(nrow + 1), 1:ncol] |
+      pad[2:(nrow + 1), 3:(ncol + 2)]
+
+    trees <- grid == 1L
+    ignite_neighbor <- trees & neighbor_burning
+    ignite_lightning <- trees & !ignite_neighbor &
+      (matrix(runif(nrow * ncol), nrow, ncol) < f)
+
+    new_grid <- grid
+    new_grid[burning] <- 0L
+    new_grid[ignite_neighbor | ignite_lightning] <- 2L
+
+    empty_now <- grid == 0L
+    grow <- empty_now & (matrix(runif(nrow * ncol), nrow, ncol) < p)
+    new_grid[grow] <- 1L
+
+    grid <- new_grid
+    history[[t]] <- grid
+    tree_frac[t] <- mean(grid == 1L)
+    burning_frac[t] <- mean(grid == 2L)
+  }
+
+  list(history = history, tree_frac = tree_frac,
+       burning_frac = burning_frac, final = grid)
+}
+```
+
+## Run the simulation
+
+```{r run-simulation}
+nrow_grid <- 60
+ncol_grid <- 60
+steps <- 200
+p_growth <- 0.06     # probability an empty cell grows a tree
+f_lightning <- 0.005 # probability a tree ignites spontaneously
+
+result <- simulate_forest(nrow_grid, ncol_grid, steps, p_growth, f_lightning)
+```
+
+## Snapshots over time
+
+```{r snapshots, fig.width=9, fig.height=6}
+plot_grid <- function(g, main) {
+  cols <- c("white", "forestgreen", "orangered")
+  image(t(apply(g, 2, rev)), col = cols, breaks = c(-0.5, 0.5, 1.5, 2.5),
+        axes = FALSE, main = main, asp = 1)
+}
+
+snap_steps <- round(seq(1, steps, length.out = 6))
+par(mfrow = c(2, 3), mar = c(1, 1, 2, 1))
+for (s in snap_steps) {
+  plot_grid(result$history[[s]], main = paste("step", s))
+}
+```
+
+White = empty, green = tree, orange = burning.
+
+## Forest cover and fires over time
+
+```{r timeseries, fig.width=8, fig.height=4}
+par(mfrow = c(1, 1), mar = c(4, 4, 2, 1))
+plot(result$tree_frac, type = "l", col = "forestgreen", lwd = 2,
+     xlab = "time step", ylab = "fraction of grid",
+     main = "Tree cover vs. fire activity", ylim = c(0, 1))
+lines(result$burning_frac * 10, col = "orangered", lwd = 1)
+legend("topright", legend = c("tree cover", "burning (x10, for visibility)"),
+       col = c("forestgreen", "orangered"), lwd = 2, bty = "n")
+```
+
+After an initial transient, tree cover fluctuates around a dynamic
+equilibrium: growth (`p`) slowly rebuilds the forest until a fire — sparked
+either by lightning or by spreading through a connected patch of trees —
+burns part of it back down. This growth/burn balance, and the wide range of
+fire sizes it produces, is the classic signature of self-organized
+criticality in this model.
+
+## Try it yourself
+
+Adjust `p_growth` and `f_lightning` in the **Run the simulation** chunk and
+re-knit:
+
+- Increasing `p_growth` relative to `f_lightning` lets denser forests build
+  up before burning, producing larger, rarer fires.
+- Increasing `f_lightning` produces smaller, more frequent fires and lower
+  average tree cover.
